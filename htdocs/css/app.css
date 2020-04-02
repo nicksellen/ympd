@@ -63,7 +63,6 @@ body {
 
 .browse-entries li .browse-song {
     display: flex;
-    border-bottom: 1px dashed #ddd;
 }
 
 .browse-entries li .browse-song>* {
@@ -88,7 +87,8 @@ body {
 }
 
 .browse-nav li:after {
-    content: '→'
+    content: '/';
+    color: #aaa;
 }
 
 .browse-nav li:last-child:after {

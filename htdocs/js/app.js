@@ -1,32 +1,49 @@
-const state = {
-    initial: true,
-    transport: {
-        state: 'unknown', // play|pause|stop|unknown
-        elapsedTime: null,
-        totalTime: null
-    },
-    current: {
-        album: null,
-        artist: null,
-        pos: null,
-        title: null,
-    },
-    queue: [],
-    browse: {
-        pending: false,
-        prefix: '/',
-        entries: [],
-    },
+function start() {
+
+    const state = {
+        initial: true,
+        transport: {
+            state: 'unknown', // play|pause|stop|unknown
+            elapsedTime: null,
+            totalTime: null
+        },
+        current: {
+            album: null,
+            artist: null,
+            pos: null,
+            title: null,
+        },
+        queue: [],
+        browse: {
+            pending: false,
+            prefix: '/',
+            entries: [],
+        },
+    }
+
+    Object.assign(window, {
+        browse(prefix) {
+            state.browse.pending = true
+            state.browse.prefix = decodeURIComponent(prefix)
+            render(state)
+            socket.send(`MPD_API_GET_BROWSE,0,${state.browse.prefix}`)
+        },
+        
+        addTrack(uri) {
+            socket.send(`MPD_API_ADD_TRACK,${decodeURIComponent(uri)}`)
+        },
+        
+        removeTrack(trackId) {
+            socket.send(`MPD_API_RM_TRACK,${trackId}`)
+        },
+    })
+
+    connect(state)
 }
 
-function connect() {
+function connect(state) {
 
-    const websocketUrl = [
-        window.location.protocol.replace(/^http/, 'ws'),
-        '//',
-        window.location.host,
-        '/',
-      ].join('')
+    const websocketUrl = document.URL.replace(/^http/, 'ws')
 
     const socket = new WebSocket(websocketUrl);
 
@@ -47,9 +64,10 @@ function connect() {
             return
         }
         // it sometimes has a \u0000 in the data, we can split on that and handle each message...
+        // it still breaks sometimes, some bugs in the backend...
         for (const item of message.data.split('\u0000')) {
             try {
-                handleMessage(JSON.parse(item))
+                handleMessage(state, JSON.parse(item))
             } catch (err) {
                 console.error('JSON exception', err)
                 console.log(item)
@@ -60,18 +78,13 @@ function connect() {
     })
 }
 
-function handleMessage({ type, data }) {
-    // console.log('got data!', type, data)
+function handleMessage(state, { type, data }) {
     switch (type) {
         case 'queue':
             state.queue = data
             render(state)
             break;
-        case 'search':
-            console.log('search', data)
-            break;
         case 'browse':
-            console.log('browse', data)
             // TODO: make sure we are on the current browse prefix somehow
             state.browse.pending = false
             state.browse.entries = data
@@ -86,12 +99,6 @@ function handleMessage({ type, data }) {
             })
             render(state)
             break;
-        case 'outputnames':
-            break;
-        case 'outputs':
-            break;
-        case 'disconnected':
-            break;
         case 'update_queue':
             socket.send('MPD_API_GET_QUEUE,0');
             break;
@@ -99,6 +106,12 @@ function handleMessage({ type, data }) {
             Object.assign(state.current, data)
             render(state)
             break;
+
+        // not implemented
+        case 'search':
+        case 'outputnames':
+        case 'outputs':
+        case 'disconnected':
         default:
             break;
     }
@@ -114,7 +127,7 @@ function getStateName(stateId) {
     }
 }
 
-function isCurrent(track) {
+function isCurrent(state, track) {
     for (let field of ['artist', 'album', 'title']) {
         if (track[field] !== state.current[field]) {
             return false
@@ -130,7 +143,7 @@ function renderQueue(state) {
         <div id="queue" class="queue">
             <ul>
                 ${state.queue.map(track => {
-                    const isCurrentAndPlaying = isPlaying && isCurrent(track)
+                    const isCurrentAndPlaying = isPlaying && isCurrent(state, track)
                     const classes = ['queue-entry']
                     if (isCurrentAndPlaying) {
                         classes.push('current')
@@ -305,26 +318,6 @@ function render(state) {
     })
 }
 
-function start() {
-    connect()
-}
-
-function browse(prefix) {
-    state.browse.pending = true
-    state.browse.prefix = decodeURIComponent(prefix)
-    render(state)
-    socket.send(`MPD_API_GET_BROWSE,0,${state.browse.prefix}`)
-}
-
-
-function addTrack(uri) {
-    socket.send(`MPD_API_ADD_TRACK,${decodeURIComponent(uri)}`)
-}
-
-function removeTrack(trackId) {
-    socket.send(`MPD_API_RM_TRACK,${trackId}`)
-}
-
 function formatSeconds(seconds) {
     const h = Math.floor(seconds / 3600)
     const m = Math.floor(seconds / 60) % 60
@@ -352,7 +345,7 @@ function escape (str) {
         '&': '&amp;'
       }[a]
     })
-  }
+}
   
 
 start()
