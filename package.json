@@ -1,0 +1,12 @@
+{
+  "name": "ympd-fork",
+  "version": "1.0.0",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "prettier": "^2.0.2"
+  },
+  "scripts": {
+    "format": "npx prettier --write htdocs/js/app.js"
+  }
+}
