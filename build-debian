@@ -7,5 +7,5 @@ docker run \
   -v $(pwd):/app \
   -v /app/build \
   ympd-fork \
-  sh -c 'mkdir /app/out && cmake .. && make && cp ympd /app/out'
+  sh -c 'mkdir -p /app/out && cmake .. && make && cp ympd /app/out'
 
