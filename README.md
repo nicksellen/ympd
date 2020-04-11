@@ -7,7 +7,9 @@ Standalone MPD Web GUI written in C, utilizing Websockets and Bootstrap/JS
 
 http://www.ympd.org
 
-![ScreenShot](http://www.ympd.org/assets/ympd_github.png)
+Modifications by @nicksellen to make a collaborative playlist editor
+
+![ScreenShot](screenshot.png)
 
 Dependencies
 ------------
